@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node dist/app.js",
-    "dev": "NODE_ENV=develop tsc-watch -b --onSuccess 'node dist/app.js | pino-pretty'",
+    "dev": "NODE_ENV=develop tsc-watch -b --onSuccess 'node dist/app.js'",
     "build": "tsc",
     "lint": "eslint . --fix"
   },
@@ -34,6 +34,9 @@
     "delay": "^5.0.0",
     "dotenv": "^16.0.3",
     "fastify": "^4.8.1",
+    "graphql": "^16.6.0",
+    "mercurius": "^10.5.0",
+    "mercurius-codegen": "^4.0.1",
     "pino": "^8.6.1",
     "sequelize": "^6.25.2",
     "sqlite3": "^5.1.2"

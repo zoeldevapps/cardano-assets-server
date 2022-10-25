@@ -6,4 +6,5 @@ export const options = {
   logLevel: process.env.LOG_LEVEL,
   db: process.env.DB_FILE,
   network: process.env.NETWORK || "1",
+  isDevelopment: process.env.NODE_ENV !== "production",
 };
