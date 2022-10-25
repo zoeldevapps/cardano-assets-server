@@ -3,7 +3,7 @@ import mercurius from "mercurius";
 import mercuriusCodegen from "mercurius-codegen";
 import { options } from "./config";
 import { schema } from "./graphql/schema";
-import { resolvers } from "./graphql/resolvers";
+import { resolvers, loaders } from "./graphql/resolvers";
 import { buildContext } from "./graphql/context";
 import { uptime } from "process";
 import { logger } from "./logger";
@@ -31,17 +31,18 @@ server.get("/health", opts, async (request, reply) => {
   return { uptime: uptime() };
 });
 
+mercuriusCodegen(server, {
+  // Commonly relative to your root package.json
+  targetPath: "./src/graphql/generated.ts",
+}).catch(logger.error);
+
 server.register(mercurius, {
   graphiql: options.isDevelopment,
   schema,
   resolvers,
+  loaders,
   context: buildContext,
 });
-
-mercuriusCodegen(server, {
-  // Commonly relative to your root package.json
-  targetPath: "./src/graphql/generated.ts",
-}).catch(console.error);
 
 export const startServer = async () => {
   await server.listen({ host: "0.0.0.0", port: options.port });
