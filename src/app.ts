@@ -1,4 +1,5 @@
 import delay from "delay";
+import { options } from "./config";
 import { sequelize } from "./db";
 import { logger } from "./logger";
 import { RATE_LIMIT_INTERVAL_IN_MS, syncOffchainMetadata } from "./offchain";
@@ -19,7 +20,10 @@ async function syncOffchainMetadataLoop() {
   try {
     await sequelize.sync();
     await startServer();
-    syncOffchainMetadataLoop();
+    if (!options.isDevelopment) {
+      // in development mode sync offchain metadata using the scripts
+      syncOffchainMetadataLoop();
+    }
   } catch (err) {
     console.error(err);
     process.exit(1);
