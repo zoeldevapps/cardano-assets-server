@@ -26,11 +26,62 @@ export type Scalars = {
 
 export type Query = {
   __typename?: "Query";
-  hello: Scalars["String"];
+  asset?: Maybe<Asset>;
 };
 
-export type QueryhelloArgs = {
+export type QueryassetArgs = {
+  subject: Scalars["ID"];
+};
+
+export type Asset = {
+  __typename?: "Asset";
+  /** Assets ID is based on policyId */
+  id: Scalars["ID"];
+  policyId: Scalars["String"];
+  assetName: Scalars["String"];
+  fingerprint: Scalars["String"];
+  common: CommonMetadata;
+  offchain?: Maybe<OffchainMetadata>;
+};
+
+/** Common metadata aggregated from various sources or calculated */
+export type CommonMetadata = {
+  __typename?: "CommonMetadata";
+  /** Name of the token or if possible the utf-8 decoded asset name */
   name: Scalars["String"];
+  /** If available show a description */
+  description?: Maybe<Scalars["String"]>;
+  /** Image uri or link to the logo */
+  image?: Maybe<Scalars["String"]>;
+  /** Decimals, by default set to '0' if there is no metadata found or NFT */
+  decimals: Scalars["Int"];
+};
+
+/**
+ * Metadata coming from the github token registry for cardano
+ * https://github.com/cardano-foundation/cardano-token-registry#semantic-content-of-registry-entries
+ */
+export type OffchainMetadata = {
+  __typename?: "OffchainMetadata";
+  /** The base16-encoded policyId + base16-encoded assetName */
+  subject: Scalars["String"];
+  /** A human-readable name for the subject, suitable for use in an interface */
+  name: Scalars["String"];
+  /** A human-readable description for the subject, suitable for use in an interface */
+  description: Scalars["String"];
+  /**
+   * The base16-encoded CBOR representation of the monetary policy script, used to verify ownership.
+   * Optional in the case of Plutus scripts as verification is handled elsewhere.
+   */
+  policy?: Maybe<Scalars["String"]>;
+  /** A human-readable ticker name for the subject, suitable for use in an interface. */
+  ticker?: Maybe<Scalars["String"]>;
+  /** A HTTPS URL (web page relating to the token) */
+  url?: Maybe<Scalars["String"]>;
+  /** A PNG image file as a byte string */
+  logo?: Maybe<Scalars["String"]>;
+  /** how many decimals to the token */
+  decimals?: Maybe<Scalars["Int"]>;
 };
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -99,14 +150,24 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
   Query: ResolverTypeWrapper<{}>;
+  ID: ResolverTypeWrapper<Scalars["ID"]>;
+  Asset: ResolverTypeWrapper<Asset>;
   String: ResolverTypeWrapper<Scalars["String"]>;
+  CommonMetadata: ResolverTypeWrapper<CommonMetadata>;
+  Int: ResolverTypeWrapper<Scalars["Int"]>;
+  OffchainMetadata: ResolverTypeWrapper<OffchainMetadata>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
   Query: {};
+  ID: Scalars["ID"];
+  Asset: Asset;
   String: Scalars["String"];
+  CommonMetadata: CommonMetadata;
+  Int: Scalars["Int"];
+  OffchainMetadata: OffchainMetadata;
   Boolean: Scalars["Boolean"];
 };
 
@@ -114,15 +175,107 @@ export type QueryResolvers<
   ContextType = MercuriusContext,
   ParentType extends ResolversParentTypes["Query"] = ResolversParentTypes["Query"]
 > = {
-  hello?: Resolver<ResolversTypes["String"], ParentType, ContextType, RequireFields<QueryhelloArgs, "name">>;
+  asset?: Resolver<
+    Maybe<ResolversTypes["Asset"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryassetArgs, "subject">
+  >;
+};
+
+export type AssetResolvers<
+  ContextType = MercuriusContext,
+  ParentType extends ResolversParentTypes["Asset"] = ResolversParentTypes["Asset"]
+> = {
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  policyId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  assetName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fingerprint?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  common?: Resolver<ResolversTypes["CommonMetadata"], ParentType, ContextType>;
+  offchain?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
+  isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CommonMetadataResolvers<
+  ContextType = MercuriusContext,
+  ParentType extends ResolversParentTypes["CommonMetadata"] = ResolversParentTypes["CommonMetadata"]
+> = {
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  image?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  decimals?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type OffchainMetadataResolvers<
+  ContextType = MercuriusContext,
+  ParentType extends ResolversParentTypes["OffchainMetadata"] = ResolversParentTypes["OffchainMetadata"]
+> = {
+  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  policy?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  ticker?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  url?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  logo?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  decimals?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
+  isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type Resolvers<ContextType = MercuriusContext> = {
   Query?: QueryResolvers<ContextType>;
+  Asset?: AssetResolvers<ContextType>;
+  CommonMetadata?: CommonMetadataResolvers<ContextType>;
+  OffchainMetadata?: OffchainMetadataResolvers<ContextType>;
 };
 
-export interface Loaders {}
+export type Loader<TReturn, TObj, TParams, TContext> = (
+  queries: Array<{
+    obj: TObj;
+    params: TParams;
+  }>,
+  context: TContext & {
+    reply: import("fastify").FastifyReply;
+  }
+) => Promise<Array<import("mercurius-codegen").DeepPartial<TReturn>>>;
+export type LoaderResolver<TReturn, TObj, TParams, TContext> =
+  | Loader<TReturn, TObj, TParams, TContext>
+  | {
+      loader: Loader<TReturn, TObj, TParams, TContext>;
+      opts?: {
+        cache?: boolean;
+      };
+    };
+export interface Loaders<
+  TContext = import("mercurius").MercuriusContext & { reply: import("fastify").FastifyReply }
+> {
+  Asset?: {
+    id?: LoaderResolver<Scalars["ID"], Asset, {}, TContext>;
+    policyId?: LoaderResolver<Scalars["String"], Asset, {}, TContext>;
+    assetName?: LoaderResolver<Scalars["String"], Asset, {}, TContext>;
+    fingerprint?: LoaderResolver<Scalars["String"], Asset, {}, TContext>;
+    common?: LoaderResolver<CommonMetadata, Asset, {}, TContext>;
+    offchain?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
+  };
 
+  CommonMetadata?: {
+    name?: LoaderResolver<Scalars["String"], CommonMetadata, {}, TContext>;
+    description?: LoaderResolver<Maybe<Scalars["String"]>, CommonMetadata, {}, TContext>;
+    image?: LoaderResolver<Maybe<Scalars["String"]>, CommonMetadata, {}, TContext>;
+    decimals?: LoaderResolver<Scalars["Int"], CommonMetadata, {}, TContext>;
+  };
+
+  OffchainMetadata?: {
+    subject?: LoaderResolver<Scalars["String"], OffchainMetadata, {}, TContext>;
+    name?: LoaderResolver<Scalars["String"], OffchainMetadata, {}, TContext>;
+    description?: LoaderResolver<Scalars["String"], OffchainMetadata, {}, TContext>;
+    policy?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
+    ticker?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
+    url?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
+    logo?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
+    decimals?: LoaderResolver<Maybe<Scalars["Int"]>, OffchainMetadata, {}, TContext>;
+  };
+}
 declare module "mercurius" {
   interface IResolvers extends Resolvers<import("mercurius").MercuriusContext> {}
   interface MercuriusLoaders extends Loaders {}
