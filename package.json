@@ -10,7 +10,8 @@
     "start": "node dist/app.js",
     "dev": "NODE_ENV=develop tsc-watch -b --onSuccess 'node dist/app.js'",
     "build": "tsc",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "prefill": "node dist/scripts/loadOffchain.js"
   },
   "repository": {
     "type": "git",

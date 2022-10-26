@@ -20,7 +20,10 @@ export const resolvers: IResolvers = {
         id: asset.subject,
         assetName: asset.assetName,
         policyId: asset.policyId,
-        fingerprint: bech32.encode("asset", bech32.toWords(Buffer.from(asset.subject, "hex"))),
+        fingerprint: bech32.encode(
+          ctx.network === "1" ? "asset" : "asset_test",
+          bech32.toWords(Buffer.from(asset.subject, "hex"))
+        ),
       };
     },
   },
