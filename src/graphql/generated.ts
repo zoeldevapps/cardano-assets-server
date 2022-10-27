@@ -42,6 +42,7 @@ export type Asset = {
   fingerprint: Scalars["String"];
   common: CommonMetadata;
   offchain?: Maybe<OffchainMetadata>;
+  cip25?: Maybe<CIP25Metadata>;
 };
 
 /** Common metadata aggregated from various sources or calculated */
@@ -82,6 +83,32 @@ export type OffchainMetadata = {
   logo?: Maybe<Scalars["String"]>;
   /** how many decimals to the token */
   decimals?: Maybe<Scalars["Int"]>;
+};
+
+/**
+ * Metadata coming from the CIP-25 standard
+ * https://cips.cardano.org/cips/cip25/
+ */
+export type CIP25Metadata = {
+  __typename?: "CIP25Metadata";
+  /** The name of the token. Should be always set */
+  name: Scalars["String"];
+  /**
+   * Should be a valid Uniform Resource Identifier (URI)
+   * pointing to a resource with mime type image/*.
+   * Note that this resource is used as thumbnail or the actual link if the NFT is an image (ideally <= 1MB).
+   * But this is not strictly followed.
+   */
+  image: Scalars["String"];
+  /** mime type of the image behind the image url */
+  mediaType?: Maybe<Scalars["String"]>;
+  /** Description of the image */
+  description?: Maybe<Scalars["String"]>;
+  /**
+   * JSON encoded additional metadata.
+   * Often the metadta would include some extra properties or ID
+   */
+  otherProperties?: Maybe<Scalars["String"]>;
 };
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -156,6 +183,7 @@ export type ResolversTypes = {
   CommonMetadata: ResolverTypeWrapper<CommonMetadata>;
   Int: ResolverTypeWrapper<Scalars["Int"]>;
   OffchainMetadata: ResolverTypeWrapper<OffchainMetadata>;
+  CIP25Metadata: ResolverTypeWrapper<CIP25Metadata>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]>;
 };
 
@@ -168,6 +196,7 @@ export type ResolversParentTypes = {
   CommonMetadata: CommonMetadata;
   Int: Scalars["Int"];
   OffchainMetadata: OffchainMetadata;
+  CIP25Metadata: CIP25Metadata;
   Boolean: Scalars["Boolean"];
 };
 
@@ -193,6 +222,7 @@ export type AssetResolvers<
   fingerprint?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   common?: Resolver<ResolversTypes["CommonMetadata"], ParentType, ContextType>;
   offchain?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
+  cip25?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
   isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -222,11 +252,24 @@ export type OffchainMetadataResolvers<
   isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type CIP25MetadataResolvers<
+  ContextType = MercuriusContext,
+  ParentType extends ResolversParentTypes["CIP25Metadata"] = ResolversParentTypes["CIP25Metadata"]
+> = {
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  image?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  mediaType?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  description?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  otherProperties?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = MercuriusContext> = {
   Query?: QueryResolvers<ContextType>;
   Asset?: AssetResolvers<ContextType>;
   CommonMetadata?: CommonMetadataResolvers<ContextType>;
   OffchainMetadata?: OffchainMetadataResolvers<ContextType>;
+  CIP25Metadata?: CIP25MetadataResolvers<ContextType>;
 };
 
 export type Loader<TReturn, TObj, TParams, TContext> = (
@@ -256,6 +299,7 @@ export interface Loaders<
     fingerprint?: LoaderResolver<Scalars["String"], Asset, {}, TContext>;
     common?: LoaderResolver<CommonMetadata, Asset, {}, TContext>;
     offchain?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
+    cip25?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
   };
 
   CommonMetadata?: {
@@ -274,6 +318,14 @@ export interface Loaders<
     url?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
     logo?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
     decimals?: LoaderResolver<Maybe<Scalars["Int"]>, OffchainMetadata, {}, TContext>;
+  };
+
+  CIP25Metadata?: {
+    name?: LoaderResolver<Scalars["String"], CIP25Metadata, {}, TContext>;
+    image?: LoaderResolver<Scalars["String"], CIP25Metadata, {}, TContext>;
+    mediaType?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
+    description?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
+    otherProperties?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
   };
 }
 declare module "mercurius" {
