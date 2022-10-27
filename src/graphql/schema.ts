@@ -15,6 +15,7 @@ export const schema = gql`
     fingerprint: String!
     common: CommonMetadata!
     offchain: OffchainMetadata
+    cip25: CIP25Metadata
   }
 
   """
@@ -87,5 +88,40 @@ export const schema = gql`
     how many decimals to the token
     """
     decimals: Int
+  }
+
+  """
+  Metadata coming from the CIP-25 standard
+  https://cips.cardano.org/cips/cip25/
+  """
+  type CIP25Metadata {
+    """
+    The name of the token. Should be always set
+    """
+    name: String!
+
+    """
+    Should be a valid Uniform Resource Identifier (URI)
+    pointing to a resource with mime type image/*.
+    Note that this resource is used as thumbnail or the actual link if the NFT is an image (ideally <= 1MB).
+    But this is not strictly followed.
+    """
+    image: String!
+
+    """
+    mime type of the image behind the image url
+    """
+    mediaType: String
+
+    """
+    Description of the image
+    """
+    description: String
+
+    """
+    JSON encoded additional metadata.
+    Often the metadta would include some extra properties or ID
+    """
+    otherProperties: String
   }
 `;

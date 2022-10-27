@@ -103,6 +103,6 @@ dist
 # TernJS port file
 .tern-port
 
-db.sqlite
+db.sqlite*
 *.ini
 !example.ini

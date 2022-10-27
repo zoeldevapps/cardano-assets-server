@@ -2,6 +2,7 @@ import { bech32 } from "bech32";
 import { keyBy } from "lodash";
 import { IResolvers, MercuriusLoaders } from "mercurius";
 import { Op } from "sequelize";
+import { Asset, CIP25Metadata, OffchainMetadata } from "../db";
 
 export const resolvers: IResolvers = {
   Query: {
@@ -22,7 +23,8 @@ export const resolvers: IResolvers = {
         policyId: asset.policyId,
         fingerprint: bech32.encode(
           ctx.network === "1" ? "asset" : "asset_test",
-          bech32.toWords(Buffer.from(asset.subject, "hex"))
+          bech32.toWords(Buffer.from(asset.subject, "hex")),
+          256
         ),
       };
     },
@@ -31,6 +33,17 @@ export const resolvers: IResolvers = {
 
 export const loaders: MercuriusLoaders = {
   Asset: {
+    async cip25(queries, ctx) {
+      const metadata = await ctx.db.CIP25Metadata.findAll({
+        where: {
+          subject: {
+            [Op.in]: queries.map(({ obj: asset }) => asset.id),
+          },
+        },
+      });
+      const metadataBySubject = keyBy(metadata, "subject");
+      return queries.map(({ obj: asset }) => metadataBySubject[asset.id] || null);
+    },
     async offchain(queries, ctx) {
       const metadata = await ctx.db.OffchainMetadata.findAll({
         where: {
@@ -43,22 +56,36 @@ export const loaders: MercuriusLoaders = {
       return queries.map(({ obj: asset }) => metadataBySubject[asset.id] || null);
     },
     async common(queries, ctx) {
-      const offchainMetadata = await ctx.db.OffchainMetadata.findAll({
+      const assets = (await ctx.db.Asset.findAll({
         where: {
           subject: {
             [Op.in]: queries.map(({ obj: asset }) => asset.id),
           },
         },
-      });
-      const offchainMetadataBySubject = keyBy(offchainMetadata, "subject");
+        include: [
+          {
+            model: ctx.db.OffchainMetadata,
+            attributes: ["name", "description", "logo", "decimals"],
+          },
+          {
+            model: ctx.db.CIP25Metadata,
+            attributes: ["name", "description", "image"],
+          },
+        ],
+      })) as (Asset & { OffchainMetadatum: null | OffchainMetadata; CIP25Metadatum: null | CIP25Metadata })[];
+
+      const assetsBySubject = keyBy(assets, "subject");
 
       return queries.map(({ obj: asset }) => {
-        const offchain = offchainMetadataBySubject[asset.id];
+        const assetWithMetadata = assetsBySubject[asset.id];
+        const offchain = assetWithMetadata.OffchainMetadatum;
+        const cip25 = assetWithMetadata.CIP25Metadatum;
         return {
-          name: offchain?.name || Buffer.from(asset.assetName, "hex").toString("utf-8"),
+          name: offchain?.name || cip25?.name || Buffer.from(asset.assetName, "hex").toString("utf-8"),
           decimals: offchain?.decimals || 0,
-          description: offchain?.description || null,
-          image: offchain?.logo || null, // TODO add the png headers? to offchain?
+          description: offchain?.description || cip25?.description || null,
+          image:
+            (offchain?.logo ? `data:image/png;base64,${offchain.logo}` : undefined) || cip25?.image || null,
         };
       });
     },

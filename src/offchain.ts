@@ -1,7 +1,8 @@
 import axios from "axios";
 import { Op } from "sequelize";
 import { options } from "./config";
-import { Asset, OffchainMetadata, OffchainMetadataAsset } from "./db";
+import { OffchainMetadata, OffchainMetadataAsset } from "./db";
+import { createOrFindAssets } from "./db/utils";
 import { logger } from "./logger";
 import { githubRateLimit } from "./util";
 
@@ -153,27 +154,12 @@ export async function syncOffchainMetadata(): Promise<void> {
 
 export async function upsertMetadataWithHash(blobs: Array<TokenMetadata & { hash: string }>) {
   logger.debug("[Offchain] Creating assets just in case");
-  await Asset.bulkCreate(
+  const assetMapping = await createOrFindAssets(
     blobs.map(({ subject }) => ({
       subject,
       policyId: subject.substring(0, 56),
       assetName: subject.substring(56),
-    })),
-    {
-      ignoreDuplicates: true,
-    }
-  );
-
-  const assetMapping = Object.fromEntries(
-    (
-      await Asset.findAll({
-        where: {
-          subject: {
-            [Op.in]: blobs.map(({ subject }) => subject),
-          },
-        },
-      })
-    ).map((asset) => [asset.subject, asset.id])
+    }))
   );
 
   logger.debug("[Offchain] inserting metadata");
