@@ -2,7 +2,7 @@ import _ from "lodash";
 import { CIP25Metadata } from "../db";
 import { createOrFindAssets } from "../db/utils";
 import { logger } from "../logger";
-import { parseMetadatumLossy, safeJSONStringify, Recorder, SupportedTx } from "./utils";
+import { parseMetadatumLossy, safeJSONStringify, Recorder, SupportedTx, joinStringIfNeeded } from "./utils";
 
 const CIP_25_METADATUM_LABEL = "721";
 const POLICY_ID_LENGTH_BASE16 = 56;
@@ -18,17 +18,26 @@ function parseOptionalString(data: unknown): string | undefined {
 }
 
 function parseTokenMetadata(data: unknown) {
-  if (!_.isObject(data) || !_.isString(data["name"])) {
+  if (!_.isObject(data)) {
+    return null;
+  }
+
+  const name = joinStringIfNeeded(data["name"]);
+  /* some nfts don't follow the standard and set the url instead */
+  const image = joinStringIfNeeded(data["image"] || data["url"]);
+  const description = joinStringIfNeeded(data["description"]);
+
+  if (!name || !image) {
+    logger.warn(data, "Unable to parse CIP-25 metadata, missing required fields");
     return null;
   }
 
   return {
-    name: data["name"],
-    /* some nfts don't follow the standard and set the url instead */
-    image: _.isString(data["image"]) ? data["image"] : _.isString(data["url"]) ? data["url"] : "",
-    description: parseOptionalString(data["description"]),
+    name,
+    image,
+    description: description || undefined,
     mediaType: parseOptionalString(data["mediaType"]),
-    otherProperties: _.omit(data, "name", "image", "description", "mediaType"),
+    otherProperties: _.omit(data, "name", "image", "url", "description", "mediaType"),
   };
 }
 
