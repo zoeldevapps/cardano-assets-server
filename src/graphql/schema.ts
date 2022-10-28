@@ -16,6 +16,12 @@ export const schema = gql`
     common: CommonMetadata!
     offchain: OffchainMetadata
     cip25: CIP25Metadata
+
+    """
+    CIP68 only defines how the data is stored and not their format
+    """
+    cip68nft: CIP25Metadata
+    cip68ft: OffchainMetadata
   }
 
   """

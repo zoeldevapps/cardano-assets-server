@@ -147,7 +147,7 @@ export class CIP25Metadata extends Model<
   declare otherProperties?: string;
 }
 
-// only store the last version
+// only store the last version, since the token needs to be minted in the same tx
 CIP25Metadata.init(
   {
     subject: {
@@ -178,8 +178,54 @@ export const CIP25MetadataAsset = CIP25Metadata.belongsTo(Asset, {
 });
 export const AssetCIP25Metadata = Asset.hasOne(CIP25Metadata);
 
-export const CIP25MetadataBlock = CIP25Metadata.belongsTo(Asset, {
+export const CIP25MetadataBlock = CIP25Metadata.belongsTo(Block, {
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 Block.hasOne(CIP25Metadata);
+
+/**
+ * CIP 68 is annoying as there is no way to differentiate between different
+ * metadata
+ */
+export class CIP68Metadata extends Model<
+  InferAttributes<CIP68Metadata>,
+  InferCreationAttributes<CIP68Metadata>
+> {
+  declare subject: string;
+  declare name: string;
+  declare description?: string;
+  declare otherProperties?: string;
+}
+
+// store the whole history of a token
+CIP68Metadata.init(
+  {
+    subject: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING, // hash of the file to detect changes
+      allowNull: false,
+    },
+    description: DataTypes.STRING,
+    otherProperties: DataTypes.TEXT, // jsonb
+  },
+  {
+    sequelize,
+    //indexes: [{ fields: ["subject", "BlockId"], unique: true }],
+  }
+);
+
+export const CIP68MetadataAsset = CIP68Metadata.belongsTo(Asset, {
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+export const AssetCIP68Metadata = Asset.hasOne(CIP68Metadata);
+
+export const CIP68MetadataBlock = CIP68Metadata.belongsTo(Block, {
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+Block.hasOne(CIP68Metadata);

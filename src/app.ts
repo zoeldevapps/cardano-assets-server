@@ -1,6 +1,6 @@
 import delay from "delay";
 import { options } from "./config";
-import { sequelize } from "./db";
+import { sequelize } from "./db/models";
 import { logger } from "./logger";
 import { RATE_LIMIT_INTERVAL_IN_MS, syncOffchainMetadata } from "./offchain";
 import { recordOnchainMetadata, stopRecord } from "./onchain/record";

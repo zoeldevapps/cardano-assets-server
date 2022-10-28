@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Op } from "sequelize";
 import { options } from "./config";
-import { OffchainMetadata, OffchainMetadataAsset } from "./db";
+import { OffchainMetadata, OffchainMetadataAsset } from "./db/models";
 import { createOrFindAssets } from "./db/utils";
 import { logger } from "./logger";
 import { githubRateLimit } from "./util";

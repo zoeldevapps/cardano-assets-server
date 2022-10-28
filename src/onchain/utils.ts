@@ -7,10 +7,11 @@ import {
   isShelleyBlock,
   Schema,
 } from "@cardano-ogmios/client";
-import _ from "lodash";
+import _, { Dictionary } from "lodash";
 import { match, P } from "ts-pattern";
+import cbor from "cbor";
 
-import { Block as DbBlock } from "../db";
+import { Block as DbBlock } from "../db/models";
 
 export type SupportedBlock =
   | ({
@@ -24,6 +25,7 @@ export type SupportedBlock =
     } & Schema.BlockMary);
 
 export type SupportedTx = Schema.TxAlonzo | Schema.TxBabbage | Schema.TxMary;
+export type PlutusSupportedTx = Schema.TxAlonzo | Schema.TxBabbage;
 
 export type Recorder = (block: SupportedBlock, dbBlock: DbBlock) => Promise<void>;
 export type Rollback = (point: Schema.PointOrOrigin) => Promise<void>;
@@ -94,4 +96,72 @@ export function safeJSONStringify(obj: unknown): string {
     obj,
     (_key, value) => (typeof value === "bigint" ? value.toString() : value) // return everything else unchanged
   );
+}
+
+export type PlutusDatum =
+  | string
+  | number
+  | bigint
+  | Buffer
+  | Map<PlutusDatum, PlutusDatum>
+  | PlutusDatum[]
+  | ConstrData;
+
+export class ConstrData {
+  constructor(public constr: number, public fields: PlutusDatum[]) {}
+}
+
+const DatumDecoderOptions = {
+  encoding: "hex" as const,
+  tags: Object.fromEntries(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    _.range(121, 128).map((tag) => [tag, (val: any) => new ConstrData(tag - 121, val)])
+  ),
+};
+
+export function decodeDatumSync(datum: string): PlutusDatum {
+  return cbor.decodeFirstSync(datum, DatumDecoderOptions);
+}
+
+export type ObjectPlutusDatum =
+  | string
+  | number
+  | bigint
+  | Buffer
+  | ObjectPlutusDatum[]
+  | Dictionary<ObjectPlutusDatum>;
+
+export function parseDatumLossy(
+  datum: PlutusDatum,
+  { bufferEncoding = "hex" }: { bufferEncoding?: BufferEncoding } = {}
+): ObjectPlutusDatum {
+  return match(datum)
+    .when(_.isString, (v) => v)
+    .when(_.isNumber, (v) => v)
+    .when(
+      (v): v is bigint => typeof v === "bigint",
+      (v) => v
+    )
+    .when(Buffer.isBuffer, (v) => v.toString(bufferEncoding))
+    .when(
+      (v): v is Map<PlutusDatum, PlutusDatum> => v instanceof Map,
+      (v) =>
+        Object.fromEntries(
+          Array.from(v).map(([key, val]) => [
+            parseDatumLossy(key, { bufferEncoding: "utf-8" }),
+            parseDatumLossy(val, { bufferEncoding }),
+          ])
+        )
+    )
+    .when(_.isArray, (v) => v.map((datum) => parseDatumLossy(datum, { bufferEncoding })))
+    .when(
+      (v): v is ConstrData => v instanceof ConstrData,
+      (v) =>
+        Object.fromEntries(
+          v.fields
+            .map((field, index) => [`_${index}`, parseDatumLossy(field, { bufferEncoding })])
+            .concat([["constr", v.constr]])
+        )
+    )
+    .exhaustive();
 }

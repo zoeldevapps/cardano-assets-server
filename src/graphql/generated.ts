@@ -43,6 +43,9 @@ export type Asset = {
   common: CommonMetadata;
   offchain?: Maybe<OffchainMetadata>;
   cip25?: Maybe<CIP25Metadata>;
+  /** CIP68 only defines how the data is stored and not their format */
+  cip68nft?: Maybe<CIP25Metadata>;
+  cip68ft?: Maybe<OffchainMetadata>;
 };
 
 /** Common metadata aggregated from various sources or calculated */
@@ -223,6 +226,8 @@ export type AssetResolvers<
   common?: Resolver<ResolversTypes["CommonMetadata"], ParentType, ContextType>;
   offchain?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
   cip25?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
+  cip68nft?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
+  cip68ft?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
   isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -300,6 +305,8 @@ export interface Loaders<
     common?: LoaderResolver<CommonMetadata, Asset, {}, TContext>;
     offchain?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
     cip25?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
+    cip68nft?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
+    cip68ft?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
   };
 
   CommonMetadata?: {
