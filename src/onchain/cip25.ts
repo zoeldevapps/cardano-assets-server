@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { CIP25Metadata } from "../db";
+import { CIP25Metadata } from "../db/models";
 import { createOrFindAssets } from "../db/utils";
 import { logger } from "../logger";
 import { parseMetadatumLossy, safeJSONStringify, Recorder, SupportedTx, joinStringIfNeeded } from "./utils";
@@ -136,5 +136,5 @@ export const recordCIP25: Recorder = async (block, dbBlock) => {
       updateOnDuplicate: ["subject"],
     }
   );
-  logger.info({ nftCount: assets.length }, "Parsed and inserted CIP25 metadata");
+  logger.debug({ nftCount: assets.length }, "Parsed and inserted CIP25 metadata");
 };

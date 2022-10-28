@@ -1,7 +1,7 @@
 import { createChainSyncClient, ChainSync, Schema } from "@cardano-ogmios/client";
 import _ from "lodash";
 import { Op } from "sequelize";
-import { Block as DbBlock } from "../db";
+import { Block as DbBlock } from "../db/models";
 import { logger } from "../logger";
 import { createContext } from "./interactionContext";
 import { getSupportedBlock, Recorder, Rollback } from "./utils";

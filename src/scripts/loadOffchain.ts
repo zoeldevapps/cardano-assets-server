@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { repository, subjectFolder, upsertMetadataWithHash } from "../offchain";
 import { logger } from "../logger";
-import { sequelize } from "../db";
+import { sequelize } from "../db/models";
 
 const program = createCommand();
 

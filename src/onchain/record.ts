@@ -2,10 +2,11 @@ import { Schema } from "@cardano-ogmios/client";
 import { ChainSyncClient } from "@cardano-ogmios/client/dist/ChainSync";
 import delay from "delay";
 import { options } from "../config";
-import { Block } from "../db";
+import { Block } from "../db/models";
 import { logger } from "../logger";
 import { startChainSync } from "./chainSync";
 import { recordCIP25 } from "./cip25";
+import { recordCIP68 } from "./cip68";
 
 const REQUIRED_CONFIRMATION_HEIGHT = 20;
 
@@ -27,7 +28,7 @@ export async function recordOnchainMetadata() {
 
   chainSyncClient = await startChainSync({
     points: [startPoint, options.onchain.syncFrom],
-    recorders: [recordCIP25],
+    recorders: [recordCIP25, recordCIP68],
     rollbacks: [],
     onClose: async () => {
       logger.error("Onchain recording stopped unexpectedly");
