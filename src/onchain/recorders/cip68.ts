@@ -22,10 +22,10 @@
 
 import { Schema } from "@cardano-ogmios/client";
 import _ from "lodash";
-import { CIP68Metadata } from "../db/models";
-import { createOrFindAssets } from "../db/utils";
-import { logger } from "../logger";
-import { ASSET_LABELS } from "./cip67Util";
+import { CIP68Metadata } from "../../db/models";
+import { createOrFindAssets } from "../../db/utils";
+import { logger } from "../../logger";
+import { ASSET_LABELS } from "../cip67Util";
 import {
   ConstrData,
   decodeDatumSync,
@@ -139,7 +139,7 @@ export const recordCIP68: Recorder = async (block, dbBlock) => {
 
   const assetMapping = await createOrFindAssets(allReferenceTokenWithMetadata);
 
-  CIP68Metadata.bulkCreate(
+  await CIP68Metadata.bulkCreate(
     allReferenceTokenWithMetadata.map(({ subject, metadata }) => ({
       subject,
       name: _.get(metadata, "name") || "",

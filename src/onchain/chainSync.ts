@@ -4,7 +4,7 @@ import { Op } from "sequelize";
 import { Block as DbBlock } from "../db/models";
 import { logger } from "../logger";
 import { createContext } from "./interactionContext";
-import { getSupportedBlock, Recorder, Rollback } from "./utils";
+import { getSupportedBlock, Recorder, Rollback } from "./recorders/utils";
 
 class MetadataSync implements ChainSync.ChainSyncMessageHandlers {
   throttledLog: _.DebouncedFunc<(obj: unknown, msg: string, ...args: unknown[]) => void>;

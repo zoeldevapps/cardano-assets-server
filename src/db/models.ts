@@ -77,21 +77,22 @@ Asset.init(
   }
 );
 
-export class Mint extends Model<InferAttributes<Mint>, InferCreationAttributes<Mint>> {
-  declare block: bigint;
+export class Forge extends Model<InferAttributes<Forge>, InferCreationAttributes<Forge>> {
   declare quantity: bigint;
 }
 
-Mint.init(
+Forge.init(
   {
-    block: DataTypes.BIGINT,
     quantity: DataTypes.BIGINT,
   },
   { sequelize }
 );
 
-Mint.belongsTo(Asset, { onDelete: "CASCADE", onUpdate: "CASCADE" });
-Asset.hasMany(Mint);
+Forge.belongsTo(Asset, { onDelete: "CASCADE", onUpdate: "CASCADE" });
+Asset.hasMany(Forge);
+
+Forge.belongsTo(Block, { onDelete: "CASCADE", onUpdate: "CASCADE" });
+Block.hasMany(Forge);
 
 export class OffchainMetadata extends Model<
   InferAttributes<OffchainMetadata>,

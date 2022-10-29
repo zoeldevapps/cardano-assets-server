@@ -11,7 +11,7 @@ import _, { Dictionary } from "lodash";
 import { match, P } from "ts-pattern";
 import cbor from "cbor";
 
-import { Block as DbBlock } from "../db/models";
+import { Block as DbBlock } from "../../db/models";
 
 export type SupportedBlock =
   | ({

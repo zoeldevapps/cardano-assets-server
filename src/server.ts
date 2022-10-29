@@ -34,7 +34,7 @@ server.get("/health", opts, async (request, reply) => {
 mercuriusCodegen(server, {
   // Commonly relative to your root package.json
   targetPath: "./src/graphql/generated.ts",
-}).catch(logger.error);
+}).catch(logger.error.bind(logger));
 
 server.register(mercurius, {
   graphiql: options.isDevelopment,

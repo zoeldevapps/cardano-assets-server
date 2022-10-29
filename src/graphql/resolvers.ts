@@ -3,7 +3,8 @@ import { bech32 } from "bech32";
 import _, { Dictionary } from "lodash";
 import { IResolvers, MercuriusLoaders } from "mercurius";
 import { Op } from "sequelize";
-import { Asset, CIP25Metadata, CIP68Metadata, OffchainMetadata } from "../db/models";
+import { Asset, CIP25Metadata, CIP68Metadata, Forge, OffchainMetadata } from "../db/models";
+import { logger } from "../logger";
 import {
   ASSET_LABELS,
   getReferenceSubject,
@@ -25,6 +26,7 @@ export const resolvers: IResolvers = {
       }
 
       return {
+        _dbId: asset.id,
         id: asset.subject,
         assetName: asset.assetName,
         policyId: asset.policyId,
@@ -214,6 +216,23 @@ export const loaders: MercuriusLoaders = {
             (logo ? `data:image/png;base64,${logo}` : undefined) || cip25?.image || cip68extra?.image || null,
         };
       });
+    },
+    async supply(queries, ctx) {
+      const forged = (await ctx.db.Forge.findAll({
+        attributes: ["AssetId", [ctx.db.sequelize.fn("sum", ctx.db.sequelize.col("quantity")), "supply"]],
+        where: {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          AssetId: {
+            [Op.in]: queries.map(({ obj: asset }) => asset._dbId),
+          },
+        },
+        group: ["AssetId"],
+        raw: true,
+      })) as (Forge & { supply: bigint })[];
+      logger.info(forged, "Querying forged for asset");
+      const forgedByAsset = _.keyBy(forged, "AssetId");
+      return queries.map(({ obj: asset }) => BigInt(forgedByAsset[asset._dbId]?.supply || 0).toString());
     },
   },
 };

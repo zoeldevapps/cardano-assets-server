@@ -22,6 +22,13 @@ export const schema = gql`
     """
     cip68nft: CIP25Metadata
     cip68ft: OffchainMetadata
+
+    """
+    Available total supply as BigInt
+    """
+    supply: String
+
+    _dbId: Int!
   }
 
   """

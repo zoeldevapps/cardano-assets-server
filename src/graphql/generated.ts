@@ -46,6 +46,9 @@ export type Asset = {
   /** CIP68 only defines how the data is stored and not their format */
   cip68nft?: Maybe<CIP25Metadata>;
   cip68ft?: Maybe<OffchainMetadata>;
+  /** Available total supply as BigInt */
+  supply?: Maybe<Scalars["String"]>;
+  _dbId: Scalars["Int"];
 };
 
 /** Common metadata aggregated from various sources or calculated */
@@ -183,8 +186,8 @@ export type ResolversTypes = {
   ID: ResolverTypeWrapper<Scalars["ID"]>;
   Asset: ResolverTypeWrapper<Asset>;
   String: ResolverTypeWrapper<Scalars["String"]>;
-  CommonMetadata: ResolverTypeWrapper<CommonMetadata>;
   Int: ResolverTypeWrapper<Scalars["Int"]>;
+  CommonMetadata: ResolverTypeWrapper<CommonMetadata>;
   OffchainMetadata: ResolverTypeWrapper<OffchainMetadata>;
   CIP25Metadata: ResolverTypeWrapper<CIP25Metadata>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]>;
@@ -196,8 +199,8 @@ export type ResolversParentTypes = {
   ID: Scalars["ID"];
   Asset: Asset;
   String: Scalars["String"];
-  CommonMetadata: CommonMetadata;
   Int: Scalars["Int"];
+  CommonMetadata: CommonMetadata;
   OffchainMetadata: OffchainMetadata;
   CIP25Metadata: CIP25Metadata;
   Boolean: Scalars["Boolean"];
@@ -228,6 +231,8 @@ export type AssetResolvers<
   cip25?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
   cip68nft?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
   cip68ft?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
+  supply?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  _dbId?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -307,6 +312,8 @@ export interface Loaders<
     cip25?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
     cip68nft?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
     cip68ft?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
+    supply?: LoaderResolver<Maybe<Scalars["String"]>, Asset, {}, TContext>;
+    _dbId?: LoaderResolver<Scalars["Int"], Asset, {}, TContext>;
   };
 
   CommonMetadata?: {

@@ -1,7 +1,7 @@
 import _ from "lodash";
-import { CIP25Metadata } from "../db/models";
-import { createOrFindAssets } from "../db/utils";
-import { logger } from "../logger";
+import { CIP25Metadata } from "../../db/models";
+import { createOrFindAssets } from "../../db/utils";
+import { logger } from "../../logger";
 import { parseMetadatumLossy, safeJSONStringify, Recorder, SupportedTx, joinStringIfNeeded } from "./utils";
 
 const CIP_25_METADATUM_LABEL = "721";
@@ -17,15 +17,17 @@ function parseOptionalString(data: unknown): string | undefined {
   return _.isString(data) ? data : undefined;
 }
 
-function parseTokenMetadata(data: unknown) {
+function parseTokenMetadata(data: unknown, assetName?: string) {
   if (!_.isObject(data)) {
     return null;
   }
 
-  const name = joinStringIfNeeded(data["name"]);
+  /* some nfts nfts don't follow the standard and skip the name */
+  const name =
+    joinStringIfNeeded(data["name"] || data["Name"]) || Buffer.from(assetName || "", "hex").toString("utf8");
   /* some nfts don't follow the standard and set the url instead */
-  const image = joinStringIfNeeded(data["image"] || data["url"]);
-  const description = joinStringIfNeeded(data["description"]);
+  const image = joinStringIfNeeded(data["image"] || data["url"] || data["Image"]);
+  const description = joinStringIfNeeded(data["description"] || data["Description"]);
 
   if (!name || !image) {
     logger.warn(data, "Unable to parse CIP-25 metadata, missing required fields");
@@ -73,7 +75,7 @@ function parseCIP25Assets(tx: SupportedTx) {
           return null;
         }
 
-        const parsedTokenData = parseTokenMetadata(data);
+        const parsedTokenData = parseTokenMetadata(data, assetName);
 
         if (!parsedTokenData) {
           logger.warn({ data, unit }, "Unable to parse CIP25 data");
