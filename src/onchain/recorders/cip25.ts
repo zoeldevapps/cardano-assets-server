@@ -26,7 +26,15 @@ function parseTokenMetadata(data: unknown, assetName?: string) {
   const name =
     joinStringIfNeeded(data["name"] || data["Name"]) || Buffer.from(assetName || "", "hex").toString("utf8");
   /* some nfts don't follow the standard and set the url instead */
-  const image = joinStringIfNeeded(data["image"] || data["url"] || data["Image"]);
+  const image = joinStringIfNeeded(
+    data["image"] ||
+      data["url"] ||
+      data["Image"] ||
+      data["src"] ||
+      data["ipfsUrl"] ||
+      data["ipfs"] ||
+      data["video"]
+  );
   const description = joinStringIfNeeded(data["description"] || data["Description"]);
 
   if (!name || !image) {
