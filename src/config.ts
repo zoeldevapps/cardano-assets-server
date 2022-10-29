@@ -3,6 +3,7 @@ dotenv.config();
 
 export const options = {
   port: Number(process.env.PORT || 0),
+  cors: process.env.CORS || "*",
   logLevel: process.env.LOG_LEVEL,
   db: process.env.DB_FILE,
   network: process.env.NETWORK || "1",
