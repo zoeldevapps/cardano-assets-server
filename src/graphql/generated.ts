@@ -43,10 +43,15 @@ export type Asset = {
   common: CommonMetadata;
   offchain?: Maybe<OffchainMetadata>;
   cip25?: Maybe<CIP25Metadata>;
+  /**
+   * In case there was a CIP27 Royalty information attached
+   * to the policy ID
+   */
+  royalty?: Maybe<Royalty>;
   /** CIP68 only defines how the data is stored and not their format */
   cip68nft?: Maybe<CIP25Metadata>;
   cip68ft?: Maybe<OffchainMetadata>;
-  /** Available total supply as BigInt */
+  /** Available total supply as stringified BigInt */
   supply?: Maybe<Scalars["String"]>;
   _dbId: Scalars["Int"];
 };
@@ -115,6 +120,26 @@ export type CIP25Metadata = {
    * Often the metadta would include some extra properties or ID
    */
   otherProperties?: Maybe<Scalars["String"]>;
+};
+
+/**
+ * Metadata coming from the CIP-27 standard
+ * https://cips.cardano.org/cips/cip27/
+ */
+export type Royalty = {
+  __typename?: "Royalty";
+  /**
+   * The "rate" key tag can be any floating point value from 0.0 to 1.0, to represent
+   * between 0 and 100 percent. For example, a 12.5 percent royalty would be
+   * represented with "rate": "0.125"
+   */
+  rate: Scalars["String"];
+  /**
+   * A single payment address.
+   * This payment address could be part of a smart contract, which should allow
+   * for greater flexibility of royalties distributions, controlled by the asset creator.
+   */
+  addr: Scalars["String"];
 };
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -190,6 +215,7 @@ export type ResolversTypes = {
   CommonMetadata: ResolverTypeWrapper<CommonMetadata>;
   OffchainMetadata: ResolverTypeWrapper<OffchainMetadata>;
   CIP25Metadata: ResolverTypeWrapper<CIP25Metadata>;
+  Royalty: ResolverTypeWrapper<Royalty>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]>;
 };
 
@@ -203,6 +229,7 @@ export type ResolversParentTypes = {
   CommonMetadata: CommonMetadata;
   OffchainMetadata: OffchainMetadata;
   CIP25Metadata: CIP25Metadata;
+  Royalty: Royalty;
   Boolean: Scalars["Boolean"];
 };
 
@@ -229,6 +256,7 @@ export type AssetResolvers<
   common?: Resolver<ResolversTypes["CommonMetadata"], ParentType, ContextType>;
   offchain?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
   cip25?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
+  royalty?: Resolver<Maybe<ResolversTypes["Royalty"]>, ParentType, ContextType>;
   cip68nft?: Resolver<Maybe<ResolversTypes["CIP25Metadata"]>, ParentType, ContextType>;
   cip68ft?: Resolver<Maybe<ResolversTypes["OffchainMetadata"]>, ParentType, ContextType>;
   supply?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
@@ -274,12 +302,22 @@ export type CIP25MetadataResolvers<
   isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type RoyaltyResolvers<
+  ContextType = MercuriusContext,
+  ParentType extends ResolversParentTypes["Royalty"] = ResolversParentTypes["Royalty"]
+> = {
+  rate?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  addr?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = MercuriusContext> = {
   Query?: QueryResolvers<ContextType>;
   Asset?: AssetResolvers<ContextType>;
   CommonMetadata?: CommonMetadataResolvers<ContextType>;
   OffchainMetadata?: OffchainMetadataResolvers<ContextType>;
   CIP25Metadata?: CIP25MetadataResolvers<ContextType>;
+  Royalty?: RoyaltyResolvers<ContextType>;
 };
 
 export type Loader<TReturn, TObj, TParams, TContext> = (
@@ -310,6 +348,7 @@ export interface Loaders<
     common?: LoaderResolver<CommonMetadata, Asset, {}, TContext>;
     offchain?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
     cip25?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
+    royalty?: LoaderResolver<Maybe<Royalty>, Asset, {}, TContext>;
     cip68nft?: LoaderResolver<Maybe<CIP25Metadata>, Asset, {}, TContext>;
     cip68ft?: LoaderResolver<Maybe<OffchainMetadata>, Asset, {}, TContext>;
     supply?: LoaderResolver<Maybe<Scalars["String"]>, Asset, {}, TContext>;
@@ -340,6 +379,11 @@ export interface Loaders<
     mediaType?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
     description?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
     otherProperties?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
+  };
+
+  Royalty?: {
+    rate?: LoaderResolver<Scalars["String"], Royalty, {}, TContext>;
+    addr?: LoaderResolver<Scalars["String"], Royalty, {}, TContext>;
   };
 }
 declare module "mercurius" {

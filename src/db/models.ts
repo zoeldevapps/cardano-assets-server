@@ -185,6 +185,34 @@ export const CIP25MetadataBlock = CIP25Metadata.belongsTo(Block, {
 });
 Block.hasOne(CIP25Metadata);
 
+export class CIP27Royalty extends Model<
+  InferAttributes<CIP27Royalty>,
+  InferCreationAttributes<CIP27Royalty>
+> {
+  declare policyId: string;
+  declare rate: string;
+  declare addr: string;
+}
+
+CIP27Royalty.init(
+  {
+    policyId: {
+      type: DataTypes.STRING(56),
+      unique: true,
+      allowNull: false,
+    },
+    rate: DataTypes.STRING,
+    addr: DataTypes.STRING,
+  },
+  { sequelize }
+);
+
+export const CIP27RoyaltyBlock = CIP27Royalty.belongsTo(Block, {
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+Block.hasOne(CIP27Royalty);
+
 /**
  * CIP 68 is annoying as there is no way to differentiate between different
  * metadata

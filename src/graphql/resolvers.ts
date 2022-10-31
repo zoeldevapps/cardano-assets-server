@@ -234,5 +234,18 @@ export const loaders: MercuriusLoaders = {
       const forgedByAsset = _.keyBy(forged, "AssetId");
       return queries.map(({ obj: asset }) => BigInt(forgedByAsset[asset._dbId]?.supply || 0).toString());
     },
+    async royalty(queries, ctx) {
+      const royalties = _.keyBy(
+        await ctx.db.CIP27Royalty.findAll({
+          where: {
+            policyId: {
+              [Op.in]: queries.map(({ obj: asset }) => asset.policyId),
+            },
+          },
+        }),
+        "policyId"
+      );
+      return queries.map(({ obj: asset }) => royalties[asset.policyId] || null);
+    },
   },
 };
