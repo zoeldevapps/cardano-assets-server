@@ -6,6 +6,7 @@ import { Block } from "../db/models";
 import { logger } from "../logger";
 import { startChainSync } from "./chainSync";
 import { recordCIP25 } from "./recorders/cip25";
+import { recordCIP27 } from "./recorders/cip27";
 import { recordCIP68 } from "./recorders/cip68";
 import { recordForge } from "./recorders/forge";
 
@@ -29,7 +30,7 @@ export async function recordOnchainMetadata() {
 
   chainSyncClient = await startChainSync({
     points: [startPoint, options.onchain.syncFrom],
-    recorders: [recordCIP25, recordCIP68, recordForge],
+    recorders: [recordCIP25, recordCIP68, recordForge, recordCIP27],
     rollbacks: [],
     onClose: async () => {
       logger.error("Onchain recording stopped unexpectedly");

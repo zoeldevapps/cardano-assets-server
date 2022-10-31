@@ -18,13 +18,19 @@ export const schema = gql`
     cip25: CIP25Metadata
 
     """
+    In case there was a CIP27 Royalty information attached
+    to the policy ID
+    """
+    royalty: Royalty
+
+    """
     CIP68 only defines how the data is stored and not their format
     """
     cip68nft: CIP25Metadata
     cip68ft: OffchainMetadata
 
     """
-    Available total supply as BigInt
+    Available total supply as stringified BigInt
     """
     supply: String
 
@@ -136,5 +142,25 @@ export const schema = gql`
     Often the metadta would include some extra properties or ID
     """
     otherProperties: String
+  }
+
+  """
+  Metadata coming from the CIP-27 standard
+  https://cips.cardano.org/cips/cip27/
+  """
+  type Royalty {
+    """
+    The "rate" key tag can be any floating point value from 0.0 to 1.0, to represent
+    between 0 and 100 percent. For example, a 12.5 percent royalty would be
+    represented with "rate": "0.125"
+    """
+    rate: String!
+
+    """
+    A single payment address.
+    This payment address could be part of a smart contract, which should allow
+    for greater flexibility of royalties distributions, controlled by the asset creator.
+    """
+    addr: String!
   }
 `;
