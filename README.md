@@ -2,10 +2,14 @@
 
 Cardano has several different sources for metadata:
 
-- off-chain registry
-- NFT metadata
-- royalty tokens for NFTs
-- ? on-chain token metadata in the future
+- [off-chain registry](https://github.com/cardano-foundation/cardano-token-registry)
+- [NFT metadata](https://cips.cardano.org/cips/cip25/)
+- [royalty tokens for NFTs](https://cips.cardano.org/cips/cip27/)
+- Drafts [on-chain token metadata](https://cips.cardano.org/cips/cip68/) in the future with [special encoding](https://github.com/cardano-foundation/CIPs/pull/298)
+
+## API
+
+The server exposes a graphql API. The schema is available [here](src/graphql/schema.ts).
 
 ## Setup
 
@@ -14,7 +18,7 @@ Cardano has several different sources for metadata:
 Offchain metadata are fetched from directly from github and is periodically checked
 for any addition entries. Github has very strict rate limiting on their API.
 It's recommended to first use the `scripts/loadOffchain.ts` script to fill the DB with
-assets by cloning the repository.
+assets by cloning the offchain repository.
 
 ## Existing solutions
 
