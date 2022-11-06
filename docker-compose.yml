@@ -1,0 +1,31 @@
+version: "3.5"
+
+services:
+  db:
+    container_name: ${COMPOSE_PROJECT_NAME}-db
+    image: postgres:15-alpine
+    shm_size: 256m
+    ports:
+      - ${DB_PORT}:5432
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    command: [
+        "postgres", # https://www.crunchydata.com/blog/optimize-postgresql-server-performance
+        "-c",
+        "work_mem=32MB",
+        "-c",
+        "wal_buffers=32MB",
+        "-c",
+        "effective_cache_size=2GB",
+        "-c",
+        "maintenance_work_mem=256MB",
+        "-c",
+        "shared_buffers=128MB",
+      ]
+
+volumes:
+  postgres:

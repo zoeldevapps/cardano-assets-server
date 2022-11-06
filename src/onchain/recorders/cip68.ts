@@ -20,9 +20,9 @@
  *    so that the metadata can be easily used from smart contracts
  */
 
-import { Schema } from "@cardano-ogmios/client";
+import { safeJSON, Schema } from "@cardano-ogmios/client";
 import _ from "lodash";
-import { CIP68Metadata } from "../../db/models";
+import { sql } from "slonik";
 import { createOrFindAssets } from "../../db/utils";
 import { logger } from "../../logger";
 import { ASSET_LABELS } from "../cip67Util";
@@ -33,7 +33,6 @@ import {
   parseDatumLossy,
   PlutusSupportedTx,
   Recorder,
-  safeJSONStringify,
 } from "./utils";
 
 const refRegexp = new RegExp(`.${ASSET_LABELS.REFERENCE}`);
@@ -78,11 +77,9 @@ const extractRefTokensWithDatum = (tx: PlutusSupportedTx) => (txOut: Schema.TxOu
   }
 
   return refTokens.map(([unit, _amount]) => {
-    const [policyId, assetName] = unit.split(".");
+    const subject = unit.replaceAll(".", "");
     return {
-      subject: `${policyId}${assetName}`,
-      policyId,
-      assetName,
+      subject,
       // for now assuming that the metadata has the format for a single token
       // in case there were multiple tokens, the metadata is copied between them
       metadata,
@@ -90,7 +87,7 @@ const extractRefTokensWithDatum = (tx: PlutusSupportedTx) => (txOut: Schema.TxOu
   });
 };
 
-export const recordCIP68: Recorder = async (block, dbBlock) => {
+export const recordCIP68: Recorder = async (block, { db }) => {
   if (block.type === "Mary") {
     return;
   }
@@ -110,14 +107,9 @@ export const recordCIP68: Recorder = async (block, dbBlock) => {
 
   if (cip68AssetUnits.length > 0) {
     await createOrFindAssets(
-      cip68AssetUnits.map((unit) => {
-        const [policyId, assetName] = unit.split(".");
-        return {
-          policyId,
-          assetName,
-          subject: `${policyId}${assetName}`,
-        };
-      })
+      db,
+      cip68AssetUnits.map((unit) => unit.replaceAll(".", "")),
+      block.header.slot
     );
     logger.debug({ count: cip68AssetUnits.length }, "Adding CIP67 minted tokens");
   }
@@ -137,18 +129,29 @@ export const recordCIP68: Recorder = async (block, dbBlock) => {
     return;
   }
 
-  const assetMapping = await createOrFindAssets(allReferenceTokenWithMetadata);
-
-  await CIP68Metadata.bulkCreate(
-    allReferenceTokenWithMetadata.map(({ subject, metadata }) => ({
-      subject,
-      name: _.get(metadata, "name") || "",
-      description: _.get(metadata, "description"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      otherProperties: safeJSONStringify(_.omit(metadata as any, "name", "description")),
-      AssetId: assetMapping[subject],
-      BlockId: dbBlock.id,
-    }))
+  const assetMapping = await createOrFindAssets(
+    db,
+    allReferenceTokenWithMetadata.map(({ subject }) => subject),
+    block.header.slot
   );
-  logger.debug({ count: allReferenceTokenWithMetadata.length }, "Adding or updating CIP68 onchain metadata");
+
+  const res = await db.query(sql`
+  INSERT INTO cip68_metadata (asset_id, block_id, name, properties)
+  SELECT * FROM ${sql.unnest(
+    allReferenceTokenWithMetadata.map(({ subject, metadata }) => [
+      assetMapping[subject],
+      block.header.slot,
+      _.get(metadata, "name") || "",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      safeJSON.stringify(_.omit(metadata as any, "name")),
+    ]),
+    ["int4", "int8", "text", "jsonb"]
+  )}
+  RETURNING id
+  `);
+
+  logger.debug(
+    { count: allReferenceTokenWithMetadata.length, added: res.rowCount },
+    "Adding or updating CIP68 onchain metadata"
+  );
 };

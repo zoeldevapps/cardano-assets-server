@@ -10,8 +10,7 @@ import {
 import _, { Dictionary } from "lodash";
 import { match, P } from "ts-pattern";
 import cbor from "cbor";
-
-import { Block as DbBlock } from "../../db/models";
+import { DatabaseConnection } from "slonik";
 
 export type SupportedBlock =
   | ({
@@ -27,8 +26,12 @@ export type SupportedBlock =
 export type SupportedTx = Schema.TxAlonzo | Schema.TxBabbage | Schema.TxMary;
 export type PlutusSupportedTx = Schema.TxAlonzo | Schema.TxBabbage;
 
-export type Recorder = (block: SupportedBlock, dbBlock: DbBlock) => Promise<void>;
-export type Rollback = (point: Schema.PointOrOrigin) => Promise<void>;
+type SyncContext = {
+  db: DatabaseConnection;
+};
+
+export type Recorder = (block: SupportedBlock, ctx: SyncContext) => Promise<void>;
+export type Rollback = (point: Schema.PointOrOrigin, ctx: SyncContext) => Promise<void>;
 
 const exhaustiveGuard = (_: never): never => {
   throw new Error("Exhaustive guard");

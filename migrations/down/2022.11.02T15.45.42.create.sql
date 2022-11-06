@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS "forge";
+DROP TABLE IF EXISTS "offchain";
+DROP TABLE IF EXISTS "cip25_metadata";
+DROP TABLE IF EXISTS "cip27_royalty";
+DROP TABLE IF EXISTS "cip68_metadata";
+DROP VIEW IF EXISTS "asset";
+DROP TABLE IF EXISTS "raw_asset";
+DROP TABLE IF EXISTS "block";

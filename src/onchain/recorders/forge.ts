@@ -1,10 +1,10 @@
 import _ from "lodash";
-import { Forge } from "../../db/models";
+import { sql } from "slonik";
 import { createOrFindAssets } from "../../db/utils";
 import { logger } from "../../logger";
 import { Recorder, SupportedTx } from "./utils";
 
-export const recordForge: Recorder = async (block, dbBlock) => {
+export const recordForge: Recorder = async (block, { db }) => {
   const transactions: SupportedTx[] = block.body;
 
   /**
@@ -16,7 +16,7 @@ export const recordForge: Recorder = async (block, dbBlock) => {
       _.entries(tx.body.mint.assets || {}).map<
         [{ policyId: string; assetName: string; subject: string }, bigint]
       >(([unit, quantity]) => {
-        const [policyId, assetName] = unit.split(".");
+        const [policyId, assetName = ""] = unit.split(".");
         return [
           {
             policyId,
@@ -33,14 +33,24 @@ export const recordForge: Recorder = async (block, dbBlock) => {
     return;
   }
 
-  const assetMap = await createOrFindAssets(forgedAssets.map(([asset]) => asset));
-
-  await Forge.bulkCreate(
-    forgedAssets.map(([asset, quantity]) => ({
-      quantity,
-      AssetId: assetMap[asset.subject],
-      BlockId: dbBlock.id,
-    }))
+  const assetMap = await createOrFindAssets(
+    db,
+    forgedAssets.map(([asset]) => asset.subject),
+    block.header.slot
   );
-  logger.debug({ count: forgedAssets.length }, "Stored forged assets.");
+
+  const res = await db.query(sql`
+  INSERT INTO forge (asset_id, block_id, qty)
+  SELECT * FROM ${sql.unnest(
+    forgedAssets.map(([asset, quantity]) => [
+      assetMap[asset.subject],
+      block.header.slot,
+      quantity.toString(),
+    ]),
+    ["int4", "int8", "int8"]
+  )}
+  RETURNING id
+  `);
+
+  logger.debug({ count: forgedAssets.length, inserted: res.rowCount }, "Stored forged assets.");
 };

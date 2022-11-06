@@ -1,8 +1,9 @@
+import { safeJSON } from "@cardano-ogmios/client";
 import _ from "lodash";
-import { CIP25Metadata } from "../../db/models";
+import { sql } from "slonik";
 import { createOrFindAssets } from "../../db/utils";
 import { logger } from "../../logger";
-import { parseMetadatumLossy, safeJSONStringify, Recorder, SupportedTx, joinStringIfNeeded } from "./utils";
+import { parseMetadatumLossy, Recorder, SupportedTx, joinStringIfNeeded } from "./utils";
 
 const CIP_25_METADATUM_LABEL = "721";
 const POLICY_ID_LENGTH_BASE16 = 56;
@@ -47,7 +48,7 @@ function parseTokenMetadata(data: unknown, assetName?: string) {
     image,
     description: description || undefined,
     mediaType: parseOptionalString(data["mediaType"]),
-    otherProperties: _.omit(data, "name", "image", "url", "description", "mediaType"),
+    properties: _.omit(data, "name", "image", "url", "description", "mediaType"),
   };
 }
 
@@ -91,10 +92,7 @@ function parseCIP25Assets(tx: SupportedTx) {
         }
 
         return {
-          unit,
           subject: `${policyId}${assetName}`,
-          policyId,
-          assetName,
           data: parsedTokenData,
         };
       });
@@ -104,7 +102,7 @@ function parseCIP25Assets(tx: SupportedTx) {
   return _.compact(txAssetsWithMetadata);
 }
 
-export const recordCIP25: Recorder = async (block, dbBlock) => {
+export const recordCIP25: Recorder = async (block, { db }) => {
   const transactions: SupportedTx[] = block.body;
 
   const cip25Transactions = transactions.filter(
@@ -129,22 +127,30 @@ export const recordCIP25: Recorder = async (block, dbBlock) => {
 
   logger.debug({ nftCount: assets.length }, "Found NFTs");
 
-  const assetMapping = await createOrFindAssets(assets);
-
-  await CIP25Metadata.bulkCreate(
-    assets.map((asset) => ({
-      name: asset.data.name,
-      image: asset.data.image,
-      subject: asset.subject,
-      description: asset.data.description,
-      mediaType: asset.data.description,
-      otherProperties: safeJSONStringify(asset.data.otherProperties),
-      AssetId: assetMapping[asset.subject],
-      BlockId: dbBlock.id,
-    })),
-    {
-      updateOnDuplicate: ["subject"],
-    }
+  const assetMapping = await createOrFindAssets(
+    db,
+    assets.map((asset) => asset.subject),
+    block.header.slot
   );
-  logger.debug({ nftCount: assets.length }, "Parsed and inserted CIP25 metadata");
+
+  const res = await db.query(sql`
+  INSERT INTO cip25_metadata (asset_id, block_id, name, image, description, media_type, properties)
+  SELECT * FROM ${sql.unnest(
+    assets.map((asset) => [
+      assetMapping[asset.subject],
+      block.header.slot,
+      asset.data.name,
+      asset.data.image,
+      asset.data.description || null,
+      asset.data.mediaType || null,
+      safeJSON.stringify(asset.data.properties),
+    ]),
+    ["int4", "int8", "text", "text", "text", "text", "jsonb"]
+  )}
+  `);
+
+  logger.debug(
+    { nftCount: assets.length, insertedCoutn: res.rowCount },
+    "Parsed and inserted CIP25 metadata"
+  );
 };
