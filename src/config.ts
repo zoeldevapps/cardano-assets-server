@@ -5,7 +5,14 @@ export const options = {
   port: Number(process.env.PORT || 0),
   cors: process.env.CORS || "*",
   logLevel: process.env.LOG_LEVEL,
-  db: process.env.DB_FILE,
+  db: {
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || "5432"),
+    database: process.env.DB_DATABASE,
+    schema: process.env.DB_SCHEMA,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+  },
   network: process.env.NETWORK || "1",
   isDevelopment: process.env.NODE_ENV !== "production",
   ogmios: {

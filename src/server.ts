@@ -1,4 +1,5 @@
 import Fastify, { FastifyInstance, RouteShorthandOptions } from "fastify";
+import fastifyPlugin from "fastify-plugin";
 import cors from "@fastify/cors";
 import mercurius from "mercurius";
 import mercuriusCodegen from "mercurius-codegen";
@@ -9,6 +10,8 @@ import { buildContext } from "./graphql/context";
 import { uptime } from "process";
 import { logger } from "./logger";
 import { getCorsOptions } from "./cors";
+import { DatabasePool } from "slonik";
+import { initDb } from "./db/pool";
 
 const server: FastifyInstance = Fastify({
   logger,
@@ -47,6 +50,25 @@ server.register(mercurius, {
   context: buildContext,
   allowBatchedQueries: true,
 });
+
+// using declaration merging decorating request with db pool instance
+declare module "fastify" {
+  interface FastifyRequest {
+    db: DatabasePool;
+  }
+}
+
+server.register(
+  fastifyPlugin(async (fastify) => {
+    const pool = await initDb();
+    if (!fastify.hasRequestDecorator("db")) {
+      fastify.decorateRequest("db", null);
+      fastify.addHook("onRequest", async (req) => {
+        req.db = pool;
+      });
+    }
+  })
+);
 
 export const startServer = async () => {
   await server.listen({ host: "0.0.0.0", port: options.port });

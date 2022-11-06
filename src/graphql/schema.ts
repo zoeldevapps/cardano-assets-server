@@ -7,7 +7,8 @@ export const schema = gql`
 
   type Asset {
     """
-    Assets ID is based on policyId
+    Assets ID is based on policyId and assetName
+    base16-encoded policyId + base16-encoded assetName
     """
     id: ID!
     policyId: String!
@@ -67,11 +68,6 @@ export const schema = gql`
   https://github.com/cardano-foundation/cardano-token-registry#semantic-content-of-registry-entries
   """
   type OffchainMetadata {
-    """
-    The base16-encoded policyId + base16-encoded assetName
-    """
-    subject: String!
-
     """
     A human-readable name for the subject, suitable for use in an interface
     """
@@ -141,7 +137,7 @@ export const schema = gql`
     JSON encoded additional metadata.
     Often the metadta would include some extra properties or ID
     """
-    otherProperties: String
+    properties: String
   }
 
   """

@@ -35,7 +35,10 @@ export type QueryassetArgs = {
 
 export type Asset = {
   __typename?: "Asset";
-  /** Assets ID is based on policyId */
+  /**
+   * Assets ID is based on policyId and assetName
+   * base16-encoded policyId + base16-encoded assetName
+   */
   id: Scalars["ID"];
   policyId: Scalars["String"];
   assetName: Scalars["String"];
@@ -75,8 +78,6 @@ export type CommonMetadata = {
  */
 export type OffchainMetadata = {
   __typename?: "OffchainMetadata";
-  /** The base16-encoded policyId + base16-encoded assetName */
-  subject: Scalars["String"];
   /** A human-readable name for the subject, suitable for use in an interface */
   name: Scalars["String"];
   /** A human-readable description for the subject, suitable for use in an interface */
@@ -119,7 +120,7 @@ export type CIP25Metadata = {
    * JSON encoded additional metadata.
    * Often the metadta would include some extra properties or ID
    */
-  otherProperties?: Maybe<Scalars["String"]>;
+  properties?: Maybe<Scalars["String"]>;
 };
 
 /**
@@ -279,7 +280,6 @@ export type OffchainMetadataResolvers<
   ContextType = MercuriusContext,
   ParentType extends ResolversParentTypes["OffchainMetadata"] = ResolversParentTypes["OffchainMetadata"]
 > = {
-  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   policy?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
@@ -298,7 +298,7 @@ export type CIP25MetadataResolvers<
   image?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   mediaType?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  otherProperties?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  properties?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -363,7 +363,6 @@ export interface Loaders<
   };
 
   OffchainMetadata?: {
-    subject?: LoaderResolver<Scalars["String"], OffchainMetadata, {}, TContext>;
     name?: LoaderResolver<Scalars["String"], OffchainMetadata, {}, TContext>;
     description?: LoaderResolver<Scalars["String"], OffchainMetadata, {}, TContext>;
     policy?: LoaderResolver<Maybe<Scalars["String"]>, OffchainMetadata, {}, TContext>;
@@ -378,7 +377,7 @@ export interface Loaders<
     image?: LoaderResolver<Scalars["String"], CIP25Metadata, {}, TContext>;
     mediaType?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
     description?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
-    otherProperties?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
+    properties?: LoaderResolver<Maybe<Scalars["String"]>, CIP25Metadata, {}, TContext>;
   };
 
   Royalty?: {

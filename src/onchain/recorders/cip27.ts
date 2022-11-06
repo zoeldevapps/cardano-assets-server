@@ -1,11 +1,11 @@
 import _ from "lodash";
-import { CIP27Royalty } from "../../db/models";
+import { sql } from "slonik";
 import { logger } from "../../logger";
 import { joinStringIfNeeded, parseMetadatumLossy, Recorder, SupportedTx } from "./utils";
 
 const CIP_27_METADATUM_LABEL = "777";
 
-export const recordCIP27: Recorder = async (block, dbBlock) => {
+export const recordCIP27: Recorder = async (block, { db }) => {
   const transactions: SupportedTx[] = block.body;
 
   const cip27Transactions = transactions.filter(
@@ -26,7 +26,10 @@ export const recordCIP27: Recorder = async (block, dbBlock) => {
 
       // in a single tx there can be at most 1 royalty token
       if (royaltyTokens.length !== 1 || !royaltyMetadatum) {
-        logger.warn({ royaltyMetadatum, royaltyTokens }, "Invalid CIP27 transaction");
+        logger.warn(
+          { royaltyMetadatum, assets: tx.body.mint.assets, txHash: tx.id },
+          "Invalid CIP27 transaction"
+        );
         return null;
       }
 
@@ -35,7 +38,7 @@ export const recordCIP27: Recorder = async (block, dbBlock) => {
       const metadata = parseMetadatumLossy(royaltyMetadatum);
 
       if (!_.isObject(metadata)) {
-        logger.warn({ royaltyMetadatum }, "Invalid CIP27 metadata");
+        logger.warn({ metadata }, "Invalid CIP27 metadata");
         return null;
       }
 
@@ -59,16 +62,23 @@ export const recordCIP27: Recorder = async (block, dbBlock) => {
     return;
   }
 
-  await CIP27Royalty.bulkCreate(
-    policyIdsWithRoyalties.map(({ policyId, rate, addr }) => ({
-      policyId,
+  const res = await db.query(sql`
+  INSERT INTO cip27_royalty (block_id, policy_id, rate, addr)
+  SELECT * FROM ${sql.unnest(
+    policyIdsWithRoyalties.map(({ policyId, rate, addr }) => [
+      block.header.slot,
+      Buffer.from(policyId, "hex"),
       rate,
       addr,
-      BlockId: dbBlock.id,
-    })),
-    {
-      ignoreDuplicates: true,
-    }
+    ]),
+    ["int8", "bytea", "text", "text"]
+  )}
+  ON CONFLICT DO NOTHING
+  RETURNING id
+  `);
+
+  logger.debug(
+    { royaltyCount: policyIdsWithRoyalties, insertedCount: res.rowCount },
+    "Inserted royalties for policies"
   );
-  logger.debug({ royaltyCount: policyIdsWithRoyalties }, "Inserted royalties for policies");
 };

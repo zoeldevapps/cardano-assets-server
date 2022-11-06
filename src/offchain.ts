@@ -1,7 +1,7 @@
 import axios from "axios";
-import { Op } from "sequelize";
+import { DatabasePool, sql } from "slonik";
 import { options } from "./config";
-import { OffchainMetadata, OffchainMetadataAsset } from "./db/models";
+import { asset, offchain } from "./db/schema";
 import { createOrFindAssets } from "./db/utils";
 import { logger } from "./logger";
 import { githubRateLimit } from "./util";
@@ -84,7 +84,7 @@ async function fetchSubjectsWithHash(registryTree: string): Promise<[string, str
     .data;
   return registryFolder.tree
     .filter(({ path }) => path.endsWith(".json"))
-    .map(({ path, sha }) => [path.split(".")[0], sha]);
+    .map(({ path, sha }) => [path.split(".")[0].toLowerCase(), sha]);
 }
 
 async function fetchMetadataContents(fileHash: string): Promise<TokenMetadata> {
@@ -95,7 +95,7 @@ async function fetchMetadataContents(fileHash: string): Promise<TokenMetadata> {
   return metadata;
 }
 
-export async function syncOffchainMetadata(): Promise<void> {
+export async function syncOffchainMetadata(db: DatabasePool): Promise<void> {
   logger.debug("[Offchain] Fetching commits");
   const lastCommitHash = await fetchLastCommitHash();
 
@@ -107,18 +107,24 @@ export async function syncOffchainMetadata(): Promise<void> {
   logger.debug({ count: githubEntries.length }, "Found subjects");
 
   const githubDataMap = Object.fromEntries(githubEntries);
-  const dbData = (
-    await OffchainMetadata.findAll({
-      attributes: ["subject", "hash"],
-    })
-  ).map((data) => [data.subject, data.hash]);
-  const dbDataMap = Object.fromEntries(dbData);
+
+  const { rows: dbData } = await db.query(sql.type(
+    offchain.pick({ hash: true }).merge(asset.pick({ id: true, subject: true }))
+  )`
+    SELECT
+      asset.id as "id",
+      asset.subject as "subject",
+      offchain.hash as "hash"
+    FROM offchain
+    JOIN asset ON offchain.asset_id = asset.id
+  `);
+  const dbDataMap = Object.fromEntries(dbData.map((data) => [data.subject, data.hash]));
 
   const newEntries = githubEntries.filter(([subject]) => !dbDataMap[subject]);
   const changedEntries = githubEntries.filter(
     ([subject, hash]) => dbDataMap[subject] && dbDataMap[subject] !== hash
   );
-  const removedEntries = dbData.filter(([subject]) => !githubDataMap[subject]);
+  const removedEntries = dbData.filter(({ subject }) => !githubDataMap[subject]);
 
   logger.debug(
     { newCount: newEntries.length, changedcount: changedEntries.length, removedCount: removedEntries.length },
@@ -127,13 +133,12 @@ export async function syncOffchainMetadata(): Promise<void> {
 
   if (removedEntries.length > 0) {
     logger.debug("[Offchain] Destroying removed entries");
-    await OffchainMetadata.destroy({
-      where: {
-        subject: {
-          [Op.in]: removedEntries.map(([subject]) => subject),
-        },
-      },
-    });
+    await db.query(
+      sql`DELETE FROM offchain WHERE asset_id = ANY(${sql.array(
+        removedEntries.map(({ id }) => id),
+        "int4"
+      )})`
+    );
   }
 
   logger.debug("[Offchain] Fetching changed and new blobs");
@@ -149,42 +154,59 @@ export async function syncOffchainMetadata(): Promise<void> {
         })
       )
   );
-  return upsertMetadataWithHash(blobs);
+  return upsertMetadataWithHash(db, blobs);
 }
 
-export async function upsertMetadataWithHash(blobs: Array<TokenMetadata & { hash: string }>) {
+export async function upsertMetadataWithHash(
+  db: DatabasePool,
+  blobs: Array<TokenMetadata & { hash: string }>
+) {
+  const validBlobs = blobs.filter(({ subject }) => subject.match(/^([a-fA-F0-9]{2})+$/));
   logger.debug("[Offchain] Creating assets just in case");
   const assetMapping = await createOrFindAssets(
-    blobs.map(({ subject }) => ({
-      subject,
-      policyId: subject.substring(0, 56),
-      assetName: subject.substring(56),
-    }))
+    db,
+    validBlobs.map(({ subject }) => subject),
+    -1
   );
 
   logger.debug("[Offchain] inserting metadata");
-  await OffchainMetadata.bulkCreate(
-    blobs.map((metadata) => ({
-      hash: metadata.hash,
-      subject: metadata.subject,
-      name: metadata.name.value,
-      description: metadata.description.value,
-      policy: metadata.policy,
-      ticker: metadata.ticker?.value,
-      url: metadata.url?.value,
-      logo: metadata.logo?.value,
-      decimals: metadata.decimals && Number(metadata.decimals.value),
-      AssetId: assetMapping[metadata.subject],
-    })),
-    {
-      updateOnDuplicate: ["subject"],
-      include: [
-        {
-          association: OffchainMetadataAsset,
-          as: "asset",
-        },
-      ],
-    }
+
+  const query = sql.type(offchain.pick({ assetId: true }))`
+  INSERT INTO offchain (asset_id, hash, name, description, policy, ticker, logo, url, decimals)
+  SELECT * FROM ${sql.unnest(
+    validBlobs.map((metadata) => [
+      assetMapping[metadata.subject],
+      metadata.hash,
+      metadata.name.value,
+      metadata.description.value,
+      (metadata.policy && Buffer.from(metadata.policy, "hex")) || null,
+      metadata.ticker?.value || null,
+      metadata.logo?.value || null,
+      metadata.url?.value || null,
+      (metadata.decimals && parseInt(metadata.decimals.value, 10)) || null,
+    ]),
+    [
+      "int4", // asset id
+      "text", // hash
+      "text", // name
+      "text", // value
+      "bytea", // policy
+      "text", // ticker
+      "text", // logo
+      "text", // url
+      "int2", //decimals
+    ]
+  )}
+  ON CONFLICT (asset_id) DO UPDATE SET
+    (hash, name, description, policy, ticker, logo, url, decimals) = 
+    (EXCLUDED.hash, EXCLUDED.name, EXCLUDED.description, EXCLUDED.policy, EXCLUDED.ticker, EXCLUDED.logo, EXCLUDED.url, EXCLUDED.decimals)
+  RETURNING asset_id AS "assetId"
+  `;
+
+  const result = await db.query(query);
+
+  logger.info(
+    { count: result.rowCount, blobs: validBlobs.length },
+    "[Offchain] updated offchain metadata entries"
   );
-  logger.info({ count: blobs.length }, "[Offchain] updated offchain metadata entries");
 }
