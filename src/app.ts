@@ -1,22 +1,8 @@
-import delay from "delay";
 import { options } from "./config";
-import { initDb } from "./db/pool";
 import { logger } from "./logger";
-import { RATE_LIMIT_INTERVAL_IN_MS, syncOffchainMetadata } from "./offchain";
+import { stopOffchainMetadataLoop, syncOffchainMetadataLoop } from "./offchain/offchainLoop";
 import { recordOnchainMetadata, stopRecord } from "./onchain/record";
-import { startServer } from "./server";
-
-async function syncOffchainMetadataLoop() {
-  const db = await initDb();
-  while (true) {
-    try {
-      await syncOffchainMetadata(db);
-    } catch (err) {
-      logger.error({ err }, "Unable to sync offchain metadata");
-    }
-    await delay(RATE_LIMIT_INTERVAL_IN_MS);
-  }
-}
+import { server, startServer } from "./server";
 
 function setupCleanup() {
   function onExit({ caller, exit }: { caller?: string; exit?: boolean }) {
@@ -24,7 +10,8 @@ function setupCleanup() {
       logger.warn(`Exiting due to ${caller}`);
       logger.flush();
       await stopRecord();
-      await delay(2000);
+      await stopOffchainMetadataLoop();
+      await server.close();
       if (exit) {
         process.exit();
       }

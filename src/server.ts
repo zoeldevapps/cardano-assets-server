@@ -13,7 +13,7 @@ import { getCorsOptions } from "./cors";
 import { DatabasePool } from "slonik";
 import { initDb } from "./db/pool";
 
-const server: FastifyInstance = Fastify({
+export const server: FastifyInstance = Fastify({
   logger,
 });
 
@@ -67,6 +67,7 @@ server.register(
         req.db = pool;
       });
     }
+    fastify.addHook("onClose", () => pool.end());
   })
 );
 

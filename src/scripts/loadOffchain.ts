@@ -2,7 +2,7 @@ import { spawnSync } from "child_process";
 import { createCommand } from "commander";
 import path from "path";
 import fs from "fs";
-import { repository, subjectFolder, upsertMetadataWithHash } from "../offchain";
+import { repository, subjectFolder, upsertMetadataWithHash } from "../offchain/offchain";
 import { logger } from "../logger";
 import { initDb } from "../db/pool";
 
@@ -47,6 +47,8 @@ program.action(async () => {
   spawnSync("rm", ["-rf", "token-registry"], {
     cwd: "/tmp",
   });
+
+  await db.end();
 });
 
 program.parse();

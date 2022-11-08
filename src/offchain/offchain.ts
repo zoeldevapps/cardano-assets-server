@@ -1,10 +1,10 @@
 import axios from "axios";
 import { DatabasePool, sql } from "slonik";
-import { options } from "./config";
-import { asset, offchain } from "./db/schema";
-import { createOrFindAssets } from "./db/utils";
-import { logger } from "./logger";
-import { githubRateLimit } from "./util";
+import { options } from "../config";
+import { asset, offchain } from "../db/schema";
+import { createOrFindAssets } from "../db/utils";
+import { logger } from "../logger";
+import { githubRateLimit } from "../util";
 
 export const {
   registry,
