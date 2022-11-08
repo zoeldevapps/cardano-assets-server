@@ -13,6 +13,17 @@ The server exposes a graphql API. The schema is available [here](src/graphql/sch
 
 ## Setup
 
+### DB and Migrations
+
+The app is using postgres as a database server. For migrations it uses `@slonik/migrator`
+internally (which uses `umzug` in the background). To run migrations in production run:
+
+```sh
+node migrate up
+```
+
+before anything else.
+
 ### Offchain metadata
 
 Offchain metadata are fetched from directly from github and is periodically checked
