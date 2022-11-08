@@ -3,7 +3,7 @@ import { createResultParserInterceptor, createUseSchemaInterceptor } from "./int
 import { options } from "../config";
 import { createFieldNameTransformationInterceptor } from "slonik-interceptor-field-name-transformation";
 
-export const initDb = () => {
+export function initDb() {
   const { db } = options;
   return createPool(`postgresql://${db.user}:${db.password}@${db.host}:${db.port}/${db.database}`, {
     interceptors: [
@@ -24,4 +24,4 @@ export const initDb = () => {
     ],
     maximumPoolSize: 25,
   });
-};
+}

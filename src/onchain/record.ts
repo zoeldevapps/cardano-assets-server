@@ -1,7 +1,7 @@
 import { Schema } from "@cardano-ogmios/client";
 import { ChainSyncClient } from "@cardano-ogmios/client/dist/ChainSync";
 import delay from "delay";
-import { sql } from "slonik";
+import { DatabasePool, sql } from "slonik";
 import { options } from "../config";
 import { initDb } from "../db/pool";
 import { block } from "../db/schema";
@@ -15,11 +15,12 @@ import { recordForge } from "./recorders/forge";
 const REQUIRED_CONFIRMATION_HEIGHT = 20;
 
 let chainSyncClient: ChainSyncClient | null = null;
+let recordDbPool: DatabasePool | null = null;
 
 export async function recordOnchainMetadata() {
-  const db = await initDb();
+  recordDbPool = await initDb();
 
-  const syncFromBlock = await db.maybeOne(sql.type(block)`
+  const syncFromBlock = await recordDbPool.maybeOne(sql.type(block)`
     SELECT * FROM block
     ORDER BY slot DESC
     OFFSET ${REQUIRED_CONFIRMATION_HEIGHT} LIMIT 1
@@ -36,7 +37,7 @@ export async function recordOnchainMetadata() {
   logger.info({ startPoint }, "Starting sync with ogmios");
 
   chainSyncClient = await startChainSync({
-    db,
+    db: recordDbPool,
     points: [startPoint, options.onchain.syncFrom],
     recorders: [recordForge, recordCIP25, recordCIP68, recordCIP27],
     rollbacks: [],
@@ -53,5 +54,10 @@ export async function recordOnchainMetadata() {
 export async function stopRecord() {
   if (chainSyncClient) {
     await chainSyncClient.shutdown();
+    chainSyncClient = null;
+  }
+  if (recordDbPool) {
+    recordDbPool.end();
+    recordDbPool = null;
   }
 }
