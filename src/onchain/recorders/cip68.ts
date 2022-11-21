@@ -25,7 +25,7 @@ import _ from "lodash";
 import { sql } from "slonik";
 import { createOrFindAssets } from "../../db/utils";
 import { logger } from "../../logger";
-import { ASSET_LABELS } from "../cip67Util";
+import { ASSET_LABELS } from "./cip67Util";
 import {
   ConstrData,
   decodeDatumSync,

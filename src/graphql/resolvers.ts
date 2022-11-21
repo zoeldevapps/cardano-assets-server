@@ -10,7 +10,7 @@ import {
   getReferenceSubject,
   getRefereneAssetName,
   isReferenceAssetName,
-} from "../onchain/cip67Util";
+} from "../onchain/recorders/cip67Util";
 
 export const resolvers: IResolvers = {
   Query: {
