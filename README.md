@@ -13,6 +13,15 @@ The server exposes a graphql API. The schema is available [here](src/graphql/sch
 
 ## Setup
 
+### DB restore
+
+Syncing the assets db from scratch on mainnet (and potentially preprod) can be quite time-consuming.
+To help with getting servers quicker up to speed, there are 2 scripts:
+
+```sh
+scripts/restore.sh dump_XXX.sql.gz
+```
+
 ### DB and Migrations
 
 The app is using postgres as a database server. For migrations it uses `@slonik/migrator`
