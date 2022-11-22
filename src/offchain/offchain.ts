@@ -165,7 +165,7 @@ export async function upsertMetadataWithHash(
   logger.debug("[Offchain] Creating assets just in case");
   const assetMapping = await createOrFindAssets(
     db,
-    validBlobs.map(({ subject }) => subject),
+    validBlobs.map(({ subject }) => subject.toLocaleLowerCase()),
     -1
   );
 
@@ -175,7 +175,7 @@ export async function upsertMetadataWithHash(
   INSERT INTO offchain (asset_id, hash, name, description, policy, ticker, logo, url, decimals)
   SELECT * FROM ${sql.unnest(
     validBlobs.map((metadata) => [
-      assetMapping[metadata.subject],
+      assetMapping[metadata.subject.toLocaleLowerCase()],
       metadata.hash,
       metadata.name.value,
       metadata.description.value,
