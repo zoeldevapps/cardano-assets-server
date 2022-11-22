@@ -3,10 +3,8 @@ import _ from "lodash";
 import { sql } from "slonik";
 import { createOrFindAssets } from "../../db/utils";
 import { logger } from "../../logger";
+import { CIP_25_METADATUM_LABEL, POLICY_ID_LENGTH_BASE16 } from "./constants";
 import { parseMetadatumLossy, Recorder, SupportedTx, joinStringIfNeeded } from "./utils";
-
-const CIP_25_METADATUM_LABEL = "721";
-const POLICY_ID_LENGTH_BASE16 = 56;
 
 declare module "lodash" {
   interface LoDashStatic {

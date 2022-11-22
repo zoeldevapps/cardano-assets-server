@@ -1,9 +1,8 @@
 import _ from "lodash";
 import { sql } from "slonik";
 import { logger } from "../../logger";
+import { CIP_25_METADATUM_LABEL, CIP_27_METADATUM_LABEL } from "./constants";
 import { joinStringIfNeeded, parseMetadatumLossy, Recorder, SupportedTx } from "./utils";
-
-const CIP_27_METADATUM_LABEL = "777";
 
 export const recordCIP27: Recorder = async (block, { db }) => {
   const transactions: SupportedTx[] = block.body;
@@ -19,21 +18,40 @@ export const recordCIP27: Recorder = async (block, { db }) => {
   const policyIdsWithRoyalties = _.compact(
     cip27Transactions.map((tx) => {
       const royaltyTokens = _.entries(tx.body.mint.assets)
-        .filter(([unit, qty]) => BigInt(qty) === 1n && !unit.split(".")[1] /* there is no asset name */)
+        .filter(
+          ([unit, qty]) =>
+            // token with no assetname getting burned or minted
+            BigInt(qty) === 1n || (BigInt(qty) === -1n && !unit.split(".")[1])
+        )
         .map(([unit]) => unit.split(".")[0]);
 
       const royaltyMetadatum = tx.metadata?.body.blob?.[CIP_27_METADATUM_LABEL];
 
-      // in a single tx there can be at most 1 royalty token
-      if (royaltyTokens.length !== 1 || !royaltyMetadatum) {
-        logger.warn(
-          { royaltyMetadatum, assets: tx.body.mint.assets, txHash: tx.id },
-          "Invalid CIP27 transaction"
-        );
+      if (!royaltyMetadatum) {
         return null;
       }
 
-      const policyId = royaltyTokens[0];
+      // in a single tx there can be at most 1 royalty token
+      const isMintingRoyaltyToken = royaltyTokens.length === 1;
+      const withNFTMetadatum = tx.metadata?.body.blob?.[CIP_25_METADATUM_LABEL];
+      if (!isMintingRoyaltyToken) {
+        logger.warn(
+          { royaltyMetadatum, assets: tx.body.mint.assets, txHash: tx.id, withNFTMetadatum },
+          "Invalid CIP27 transaction, missing royalty token"
+        );
+      }
+
+      const policyId = isMintingRoyaltyToken
+        ? royaltyTokens[0]
+        : // as a backup the first minted NFTs policy
+          _.entries(tx.body.mint.assets)
+            .filter(([_unit, qty]) => BigInt(qty) === 1n)
+            .map(([unit]) => unit.split(".")[0])[0];
+
+      if (!policyId) {
+        logger.error({ royaltyTokens }, "CIP27: unable to determing royalty token policy id");
+        return null;
+      }
 
       const metadata = parseMetadatumLossy(royaltyMetadatum);
 
@@ -42,7 +60,10 @@ export const recordCIP27: Recorder = async (block, { db }) => {
         return null;
       }
 
-      const rate = metadata["rate"] || metadata["pct"];
+      const rate =
+        metadata["rate"] ||
+        metadata["pct"] ||
+        (metadata["prc"] && ((Number(metadata["prc"]) || 0) / 1000).toFixed(5));
       const addr = joinStringIfNeeded(metadata["addr"] || metadata["address"]);
 
       if (_.isString(rate) && _.isString(addr)) {
