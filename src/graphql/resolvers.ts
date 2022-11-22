@@ -295,7 +295,7 @@ export const loaders: MercuriusLoaders = {
     },
     async supply(queries, ctx) {
       const { rows: forged } = await ctx.db.query(sql.type(
-        z.object({ assetId: z.number(), supply: z.bigint() })
+        Schema.forge.pick({ assetId: true, supply: true })
       )`
         SELECT DISTINCT ON (asset_id)
           asset_id, supply
