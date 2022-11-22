@@ -38,7 +38,8 @@ function parseTokenMetadata(data: unknown, assetName?: string) {
   );
   const description = joinStringIfNeeded(data["description"] || data["Description"]);
 
-  if (!name || !image) {
+  // CIP-25 also requires the image to be required, but it's missing on some tokens
+  if (!name) {
     logger.warn(data, "Unable to parse CIP-25 metadata, missing required fields");
     return null;
   }
@@ -140,7 +141,7 @@ export const recordCIP25: Recorder = async (block, { db }) => {
       assetMapping[asset.subject],
       block.header.slot,
       asset.data.name,
-      asset.data.image,
+      asset.data.image || "", // field required by CIP-25, but missing on some tokens
       asset.data.description || null,
       asset.data.mediaType || null,
       safeJSON.stringify(asset.data.properties),
