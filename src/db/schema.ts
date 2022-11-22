@@ -27,7 +27,9 @@ export const forge = z.object({
   id: z.number(),
   assetId: z.number(),
   blockId: z.bigint(),
+  txIndex: z.number(),
   qty: z.bigint(),
+  supply: z.bigint(),
 });
 
 export const offchain = z.object({

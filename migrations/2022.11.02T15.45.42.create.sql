@@ -42,13 +42,16 @@ CREATE TABLE forge (
   -- block_id, asset_id are not necesasrily unique
   asset_id INT NOT NULL,
   block_id BIGINT NOT NULL,
+  tx_index INT NOT NULL,
+  supply BIGINT NOT NULL,
   qty BIGINT NOT NULL,
   -- constraints
   CONSTRAINT fk_forge_block FOREIGN KEY (block_id) REFERENCES block(slot) ON DELETE CASCADE,
   CONSTRAINT fk_forge_asset FOREIGN KEY (asset_id) REFERENCES raw_asset(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_forge_asset_id ON forge USING HASH (asset_id);
+CREATE INDEX idx_forge_asset_id ON forge (asset_id, block_id);
+CREATE INDEX idx_forge_block_id on forge (block_id);
 
 CREATE TABLE offchain (
   asset_id INT NOT NULL PRIMARY KEY,
@@ -80,6 +83,7 @@ CREATE TABLE cip25_metadata (
 );
 
 CREATE INDEX idx_cip25_asset_id ON cip25_metadata USING HASH (asset_id);
+CREATE INDEX idx_cip25_block_id ON cip25_metadata (block_id);
 
 CREATE TABLE cip27_royalty (
   id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -92,6 +96,7 @@ CREATE TABLE cip27_royalty (
 );
 
 CREATE UNIQUE INDEX idx_cip27_policy_id ON cip27_royalty (policy_id);
+CREATE INDEX idx_cip27_block_id ON cip27_royalty (block_id);
 
 CREATE TABLE cip68_metadata (
   id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -105,3 +110,4 @@ CREATE TABLE cip68_metadata (
 );
 
 CREATE INDEX idx_cip68_asset_id ON cip68_metadata USING HASH (asset_id);
+CREATE INDEX idx_cip68_block_id ON cip68_metadata (block_id);

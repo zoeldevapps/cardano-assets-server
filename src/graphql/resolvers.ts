@@ -297,13 +297,14 @@ export const loaders: MercuriusLoaders = {
       const { rows: forged } = await ctx.db.query(sql.type(
         z.object({ assetId: z.number(), supply: z.bigint() })
       )`
-        SELECT asset_id, sum(qty)::bigint as "supply"
+        SELECT DISTINCT ON (asset_id)
+          asset_id, supply
         FROM forge
         WHERE asset_id = ANY(${sql.array(
           queries.map(({ obj: asset }) => asset._dbId),
           "int4"
         )})
-        GROUP BY asset_id
+        ORDER BY asset_id, block_id DESC, tx_index DESC
       `);
 
       const forgedByAsset = _.keyBy(forged, "assetId");
