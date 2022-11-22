@@ -43,8 +43,8 @@ CREATE TABLE forge (
   asset_id INT NOT NULL,
   block_id BIGINT NOT NULL,
   tx_index INT NOT NULL,
-  supply BIGINT NOT NULL,
-  qty BIGINT NOT NULL,
+  supply NUMERIC(78,0) NOT NULL, -- to fit in 256bit int
+  qty BIGINT NOT NULL, -- int8 should be enough to fit in
   -- constraints
   CONSTRAINT fk_forge_block FOREIGN KEY (block_id) REFERENCES block(slot) ON DELETE CASCADE,
   CONSTRAINT fk_forge_asset FOREIGN KEY (asset_id) REFERENCES raw_asset(id) ON DELETE CASCADE

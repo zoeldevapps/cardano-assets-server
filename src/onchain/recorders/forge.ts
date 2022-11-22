@@ -70,8 +70,11 @@ export const recordForge: Recorder = async (block, { db }) => {
 
   const res = await db.query(sql`
   INSERT INTO forge (asset_id, block_id, tx_index, qty, supply)
-  SELECT *
-  FROM ${sql.unnest(forgedAssetsWithSupply, ["int4", "int8", "int4", "int8", "int8"])}
+  SELECT
+    T.asset_id, T.block_id, T.tx_index, T.qty,
+    T.supplyStr::NUMERIC(78) as supply
+  FROM ${sql.unnest(forgedAssetsWithSupply, ["int4", "int8", "int4", "int8", "text"])}
+    AS T(asset_id, block_id, tx_index, qty, supplyStr)
   RETURNING id
   `);
 

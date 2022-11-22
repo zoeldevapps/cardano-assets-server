@@ -29,7 +29,7 @@ export const forge = z.object({
   blockId: z.bigint(),
   txIndex: z.number(),
   qty: z.bigint(),
-  supply: z.bigint(),
+  supply: z.string().transform((s) => BigInt(s)), // numeric might not fit inside postgres int8
 });
 
 export const offchain = z.object({
