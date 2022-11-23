@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance, RouteShorthandOptions } from "fastify";
 import fastifyPlugin from "fastify-plugin";
 import cors from "@fastify/cors";
+import { expandAllowedOrigins } from "@zoeldevapps/fastify-cors-envregex";
 import mercurius from "mercurius";
 import mercuriusCodegen from "mercurius-codegen";
 import { options } from "./config";
@@ -9,7 +10,6 @@ import { resolvers, loaders } from "./graphql/resolvers";
 import { buildContext } from "./graphql/context";
 import { uptime } from "process";
 import { logger } from "./logger";
-import { getCorsOptions } from "./cors";
 import { DatabasePool } from "slonik";
 import { initDb } from "./db/pool";
 
@@ -36,7 +36,7 @@ server.get("/health", opts, async (request, reply) => {
   return { uptime: uptime() };
 });
 
-server.register(cors, getCorsOptions(options.cors, !options.isDevelopment));
+server.register(cors, expandAllowedOrigins(options.cors, !options.isDevelopment));
 mercuriusCodegen(server, {
   // Commonly relative to your root package.json
   targetPath: "./src/graphql/generated.ts",
